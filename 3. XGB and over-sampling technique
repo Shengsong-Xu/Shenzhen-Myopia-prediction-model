@@ -56,8 +56,8 @@ def evaluate_resampling(xgb, resampling_method, X, y, X_test, y_test, label):
     return fpr, tpr, auc_score
 
 # Plot ROC Curves
-plt.figure(figsize=(10, 7))
-colors = ['black', 'green', 'orange', 'red']
+plt.figure(figsize=(5, 5))
+colors = ['black', 'darkred', 'red', 'lightcoral']
 roc_results = {}
 
 for (label, resampler), color in zip(resampling_methods.items(), colors):
@@ -71,7 +71,6 @@ plt.title('ROC Curves for XGB with Resampling Techniques')
 plt.xlabel('False Positive Rate')
 plt.ylabel('True Positive Rate')
 plt.legend(loc='lower right')
-plt.grid()
 plt.show()
 
 # Print AUC results
