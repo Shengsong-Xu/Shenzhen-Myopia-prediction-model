@@ -30,7 +30,6 @@ xgb = XGBClassifier(
     gamma=0.2,
     min_child_weight=5,
     random_state=66,
-    use_label_encoder=False,
     eval_metric='logloss',
     n_jobs=-1
 )
