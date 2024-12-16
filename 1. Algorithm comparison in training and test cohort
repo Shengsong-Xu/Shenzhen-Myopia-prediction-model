@@ -26,7 +26,7 @@ external_data = pd.read_csv(external_file)
 X_test = external_data[['grade', 'age', 'gender', 'vision', 'ser']]
 y_test = external_data['occur']
 
-# Define models with updated hyperparameters
+# Define models 
 models = {
     'Random Forest': RandomForestClassifier(
         n_estimators=220,
