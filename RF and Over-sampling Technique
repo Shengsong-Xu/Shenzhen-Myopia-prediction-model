@@ -1,0 +1,77 @@
+import pandas as pd
+import numpy as np
+from sklearn.model_selection import cross_val_predict, StratifiedKFold, train_test_split
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import roc_curve, auc, roc_auc_score
+from imblearn.over_sampling import ADASYN, SMOTE, RandomOverSampler
+import matplotlib.pyplot as plt
+
+# Load the training dataset
+train_file = "training_set.csv"
+train_data = pd.read_csv(train_file)
+
+# Define input features (X) and target (y)
+X = train_data[['grade', 'age', 'gender', 'vision', 'ser']]
+y = train_data['occur']
+
+# Load the external validation dataset
+external_file = "external_test.csv"
+external_data = pd.read_csv(external_file)
+X_test = external_data[['grade', 'age', 'gender', 'vision', 'ser']]
+y_test = external_data['occur']
+
+# Random Forest Classifier setup
+rf = RandomForestClassifier(
+    n_estimators=100,
+    max_depth=10,
+    min_samples_split=10,
+    min_samples_leaf=4,
+    random_state=66,
+    n_jobs=-1
+)
+
+# Resampling techniques
+resampling_methods = {
+    'RF': None,
+    'RF + ADASYN': ADASYN(random_state=66),
+    'RF + SMOTE': SMOTE(random_state=66),
+    'RF + ROS': RandomOverSampler(random_state=66)
+}
+
+# Function to train and evaluate Random Forest with different resampling techniques
+def evaluate_resampling(rf, resampling_method, X, y, X_test, y_test, label):
+    if resampling_method:
+        X_resampled, y_resampled = resampling_method.fit_resample(X, y)
+    else:
+        X_resampled, y_resampled = X, y
+
+    rf.fit(X_resampled, y_resampled)
+    y_pred_proba = rf.predict_proba(X_test)[:, 1]
+    auc_score = roc_auc_score(y_test, y_pred_proba)
+    fpr, tpr, _ = roc_curve(y_test, y_pred_proba)
+    return fpr, tpr, auc_score
+
+# Plot ROC Curves
+plt.figure(figsize=(10, 7))
+colors = ['black', 'darkred', 'red', 'lightcoral']
+roc_results = {}
+
+for (label, resampler), color in zip(resampling_methods.items(), colors):
+    fpr, tpr, auc_score = evaluate_resampling(rf, resampler, X, y, X_test, y_test, label)
+    plt.plot(fpr, tpr, label=f'{label} (AUC = {auc_score:.3f})', color=color)
+    roc_results[label] = auc_score
+
+# Plot settings
+plt.plot([0, 1], [0, 1], linestyle='--', color='gray')
+plt.title('ROC Curves for RF with Resampling Techniques')
+plt.xlabel('False Positive Rate')
+plt.ylabel('True Positive Rate')
+plt.legend(loc='lower right')
+plt.grid()
+plt.show()
+
+# Print AUC results
+print("AUC Results:")
+for label, auc_score in roc_results.items():
+    print(f"{label}: {auc_score:.3f}")
+
