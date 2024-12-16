@@ -1,0 +1,147 @@
+import pandas as pd
+import numpy as np
+from sklearn.model_selection import cross_val_predict, StratifiedKFold, train_test_split
+from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.svm import SVC
+from xgboost import XGBClassifier
+from catboost import CatBoostClassifier
+from lightgbm import LGBMClassifier
+from sklearn.metrics import (roc_curve, auc, accuracy_score, precision_score, 
+                             recall_score, f1_score, roc_auc_score)
+import matplotlib.pyplot as plt
+
+# Load the training dataset
+train_file = "training_set.csv"
+train_data = pd.read_csv(train_file)
+
+# Define input features (X) and target (y)
+X = train_data[['grade', 'age', 'gender', 'vision', 'ser']]
+y = train_data['occur']
+# or ['prog']
+
+# Load the external validation dataset
+external_file = "external_test.csv"
+external_data = pd.read_csv(external_file)
+X_test = external_data[['grade', 'age', 'gender', 'vision', 'ser']]
+y_test = external_data['occur']
+
+# Define models with updated hyperparameters
+models = {
+    'Random Forest': RandomForestClassifier(
+        n_estimators=220,
+        max_depth=13,
+        min_samples_split=10,
+        min_samples_leaf=4,
+        max_features='sqrt',
+        random_state=66,
+        n_jobs=-1
+    ),
+    'SVM': SVC(
+        kernel='rbf',
+        C=1.0,
+        gamma='auto',
+        probability=True,
+        random_state=66
+    ),
+    'XGBoost': XGBClassifier(
+        n_estimators=250,
+        max_depth=7,
+        learning_rate=0.1,
+        subsample=0.9,
+        colsample_bytree=0.9,
+        gamma=0.2,
+        eval_metric='logloss',
+        use_label_encoder=False,
+        random_state=66,
+        n_jobs=-1
+    ),
+    'CatBoost': CatBoostClassifier(
+        iterations=300,
+        learning_rate=0.08,
+        depth=6,
+        l2_leaf_reg=5,
+        loss_function='Logloss',
+        verbose=0,
+        random_state=66
+    ),
+    'GBDT': GradientBoostingClassifier(
+        n_estimators=150,
+        learning_rate=0.1,
+        max_depth=5,
+        min_samples_split=10,
+        min_samples_leaf=4,
+        subsample=0.8,
+        random_state=66
+    ),
+    'LGBM': LGBMClassifier(
+        n_estimators=350,
+        learning_rate=0.1,
+        max_depth=7,
+        num_leaves=15,
+        min_data_in_leaf=30,
+        feature_fraction=0.8,
+        bagging_fraction=0.8,
+        bagging_freq=5,
+        random_state=66,
+        n_jobs=-1
+    ),
+    'KNN': KNeighborsClassifier(
+        n_neighbors=7,
+        weights='distance',
+        metric='minkowski',
+        p=2
+    )
+}
+
+# Cross-validation setup
+cv = StratifiedKFold(n_splits=10, shuffle=True, random_state=66)
+
+# Function to evaluate model
+def evaluate_model(model, X, y, X_test, y_test, name):
+    # Cross-validation predictions
+    y_pred_proba_cv = cross_val_predict(model, X, y, cv=cv, method='predict_proba', n_jobs=-1)[:, 1]
+    y_pred_cv = cross_val_predict(model, X, y, cv=cv, method='predict', n_jobs=-1)
+
+    # Train model on full dataset and test on external set
+    model.fit(X, y)
+    y_pred_proba_test = model.predict_proba(X_test)[:, 1]
+    y_pred_test = model.predict(X_test)
+
+    # Metrics for Cross-validation
+    accuracy_cv = accuracy_score(y, y_pred_cv)
+    precision_cv = precision_score(y, y_pred_cv)
+    recall_cv = recall_score(y, y_pred_cv)
+    f1_cv = f1_score(y, y_pred_cv)
+    auc_cv = roc_auc_score(y, y_pred_proba_cv)
+
+    # Metrics for External Validation
+    accuracy_test = accuracy_score(y_test, y_pred_test)
+    precision_test = precision_score(y_test, y_pred_test)
+    recall_test = recall_score(y_test, y_pred_test)
+    f1_test = f1_score(y_test, y_pred_test)
+    auc_test = roc_auc_score(y_test, y_pred_proba_test)
+
+    # ROC Curves
+    fpr_cv, tpr_cv, _ = roc_curve(y, y_pred_proba_cv)
+    fpr_test, tpr_test, _ = roc_curve(y_test, y_pred_proba_test)
+
+    # Plot ROC Curves
+    plt.figure(figsize=(10, 6))
+    plt.plot(fpr_cv, tpr_cv, label=f'Cross-Validation AUC: {auc_cv:.2f}')
+    plt.plot(fpr_test, tpr_test, label=f'External Validation AUC: {auc_test:.2f}')
+    plt.plot([0, 1], [0, 1], linestyle='--', color='gray')
+    plt.title(f'ROC Curve - {name}')
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    plt.legend(loc='lower right')
+    plt.show()
+
+    # Print Metrics
+    print(f"\n--- {name} Metrics ---")
+    print(f"Cross-Validation: Accuracy={accuracy_cv:.3f}, Precision={precision_cv:.3f}, Recall={recall_cv:.3f}, F1={f1_cv:.3f}, AUC={auc_cv:.3f}")
+    print(f"External Validation: Accuracy={accuracy_test:.3f}, Precision={precision_test:.3f}, Recall={recall_test:.3f}, F1={f1_test:.3f}, AUC={auc_test:.3f}")
+
+# Evaluate all models
+for name, model in models.items():
+    evaluate_model(model, X, y, X_test, y_test, name)
