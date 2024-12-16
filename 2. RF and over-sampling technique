@@ -1,3 +1,6 @@
+pip install --user scikit-learn imbalanced-learn
+pip install --upgrade scikit-learn imbalanced-learn
+
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import cross_val_predict, StratifiedKFold, train_test_split
@@ -53,7 +56,7 @@ def evaluate_resampling(rf, resampling_method, X, y, X_test, y_test, label):
     return fpr, tpr, auc_score
 
 # Plot ROC Curves
-plt.figure(figsize=(10, 7))
+plt.figure(figsize=(5, 5))
 colors = ['black', 'darkred', 'red', 'lightcoral']
 roc_results = {}
 
@@ -68,7 +71,6 @@ plt.title('ROC Curves for RF with Resampling Techniques')
 plt.xlabel('False Positive Rate')
 plt.ylabel('True Positive Rate')
 plt.legend(loc='lower right')
-plt.grid()
 plt.show()
 
 # Print AUC results
