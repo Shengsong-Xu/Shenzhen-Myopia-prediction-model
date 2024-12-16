@@ -1,0 +1,129 @@
+------------------------------
+# RF+SMOTE
+
+import pandas as pd
+import numpy as np
+from sklearn.ensemble import RandomForestClassifier
+from imblearn.over_sampling import SMOTE
+
+# Define the prediction function
+def predict_outcome(input_data):
+    # Check if input_data contains all required fields
+    required_fields = ['grade', 'age', 'gender', 'vision', 'ser']
+    if not all(field in input_data for field in required_fields):
+        raise ValueError("Input data must include all required fields: 'grade', 'age', 'gender', 'vision', 'ser'.")
+
+    # Convert input_data to a DataFrame
+    input_df = pd.DataFrame([input_data])
+
+    # Load the training dataset
+    train_file = "training_set.csv"
+    train_data = pd.read_csv(train_file)
+
+    # Define input features (X) and target (y)
+    X = train_data[['grade', 'age', 'gender', 'vision', 'ser']]
+    y = train_data['occur']
+
+    # Random Forest Classifier setup
+    rf = RandomForestClassifier(
+        n_estimators=320,
+        max_depth=13,
+        min_samples_split=10,
+        min_samples_leaf=4,
+        max_features='sqrt',
+        random_state=66,
+        n_jobs=-1
+    )
+
+    # Resampling with SMOTE
+    smote = SMOTE(k_neighbors=5, random_state=66)
+    X_resampled, y_resampled = smote.fit_resample(X, y)
+
+    # Fit the Random Forest model with SMOTE data
+    rf.fit(X_resampled, y_resampled)
+
+    # Predict the outcome for the input data
+    prediction = rf.predict(input_df)[0]
+
+    return prediction
+
+# Example input data
+test_input = {
+    'grade': 8,
+    'age': 15,
+    'gender': 1,
+    'vision': 0,
+    'ser': 2.5
+}
+
+# Predict and output the result
+result = predict_outcome(test_input)
+print(f"Predicted outcome: {result}")
+
+
+------------------------------
+# XGB+ADASYN
+
+import pandas as pd
+import numpy as np
+from xgboost import XGBClassifier
+from imblearn.over_sampling import ADASYN
+
+# Define the prediction function
+def predict_outcome(input_data):
+    # Check if input_data contains all required fields
+    required_fields = ['grade', 'age', 'gender', 'vision', 'ser']
+    if not all(field in input_data for field in required_fields):
+        raise ValueError("Input data must include all required fields: 'grade', 'age', 'gender', 'vision', 'ser'.")
+
+    # Convert input_data to a DataFrame
+    input_df = pd.DataFrame([input_data])
+
+    # Load the training dataset
+    train_file = "training_set.csv"
+    train_data = pd.read_csv(train_file)
+
+    # Define input features (X) and target (y)
+    X = train_data[['grade', 'age', 'gender', 'vision', 'ser']]
+    y = train_data['occur']
+
+    # XGBoost Classifier setup
+    xgb = XGBClassifier(
+        n_estimators=440,
+        max_depth=6,
+        learning_rate=0.06,
+        subsample=0.8,
+        colsample_bytree=0.9,
+        gamma=0.2,
+        min_child_weight=5,
+        random_state=66,
+        use_label_encoder=False,
+        eval_metric='logloss',
+        n_jobs=-1
+    )
+
+    # Resampling with ADASYN
+    adasyn = ADASYN(n_neighbors=5, random_state=66)
+    X_resampled, y_resampled = adasyn.fit_resample(X, y)
+
+    # Fit the XGBoost model with ADASYN data
+    xgb.fit(X_resampled, y_resampled)
+
+    # Predict the outcome for the input data
+    prediction = xgb.predict(input_df)[0]
+
+    return prediction
+
+# Example input data
+test_input = {
+    'grade': 3,
+    'age': 9,
+    'gender': 1,
+    'vision': 0.1,
+    'ser': -2
+}
+
+# Predict and output the result
+result = predict_outcome(test_input)
+print(f"Predicted outcome: {result}")
+
