@@ -1,3 +1,5 @@
+pip install scikit-learn xgboost catboost lightgbm
+
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import cross_val_predict, StratifiedKFold, train_test_split
@@ -145,3 +147,46 @@ def evaluate_model(model, X, y, X_test, y_test, name):
 # Evaluate all models
 for name, model in models.items():
     evaluate_model(model, X, y, X_test, y_test, name)
+
+-------------------------------
+# Integrate separately in the internal validation set and the external test set
+
+# Function to plot ROC curves
+def plot_roc_curves(fpr, tpr, labels, title, filename, colors):
+    plt.figure(figsize=(5, 5))
+    for i, (label, color) in enumerate(zip(labels, colors)):
+        plt.plot(fpr[i], tpr[i], label=label, color=color)
+    plt.plot([0, 1], [0, 1], linestyle='--', color='gray')
+    plt.title(title)
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    plt.legend(loc='lower right')
+    plt.savefig(filename)
+    plt.show()
+
+# Initialize lists to store fpr and tpr for each model
+fpr_cv_all = []
+tpr_cv_all = []
+fpr_test_all = []
+tpr_test_all = []
+
+# Evaluate all models and store fpr and tpr
+for name, model in models.items():
+    y_pred_proba_cv = cross_val_predict(model, X, y, cv=cv, method='predict_proba', n_jobs=-1)[:, 1]
+    fpr_cv, tpr_cv, _ = roc_curve(y, y_pred_proba_cv)
+    fpr_cv_all.append(fpr_cv)
+    tpr_cv_all.append(tpr_cv)
+    
+    y_pred_proba_test = model.predict_proba(X_test)[:, 1]
+    fpr_test, tpr_test, _ = roc_curve(y_test, y_pred_proba_test)
+    fpr_test_all.append(fpr_test)
+    tpr_test_all.append(tpr_test)
+    
+# Define colors for each model
+colors = ['black', 'deepskyblue','lightgreen',  'navy', 'gray', 'lightcoral', 'thistle']
+
+# Plot internal validation ROC curves
+plot_roc_curves(fpr_cv_all, tpr_cv_all, models.keys(), 'Internal Validation ROC Curves', 'internal_validation_roc.png', colors)
+
+# Plot external validation ROC curves
+plot_roc_curves(fpr_test_all, tpr_test_all, models.keys(), 'External Validation ROC Curves', 'external_validation_roc.png', colors)
