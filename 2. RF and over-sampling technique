@@ -57,7 +57,7 @@ def evaluate_resampling(rf, resampling_method, X, y, X_test, y_test, label):
 
 # Plot ROC Curves
 plt.figure(figsize=(5, 5))
-colors = ['black', 'darkred', 'red', 'lightcoral']
+colors = ['black', 'darkred', 'lightcoral', '#FFB6C1']
 roc_results = {}
 
 for (label, resampler), color in zip(resampling_methods.items(), colors):
