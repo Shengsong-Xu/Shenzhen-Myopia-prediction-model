@@ -51,6 +51,7 @@ models = {
         subsample=0.9,
         colsample_bytree=0.9,
         gamma=0.2,
+        min_child_weight=5,
         eval_metric='logloss',
         use_label_encoder=False,
         random_state=66,
